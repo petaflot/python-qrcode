@@ -1,0 +1,39 @@
+#!/usr/bin/python3.6
+import qrcode
+import qrcode.image.svg
+from sys import argv, stdin
+
+# Error correction:
+#
+# L <= 7%
+# M <= 15%
+# Q <= 25%
+# H <= 30%
+
+SIZE = 2.5 # size of a base square, in mm.
+#from decimal import Decimal
+#STROKEWIDTH = Decimal('0.2')
+
+if len(argv) != 2:
+    print("Usage: $ cat <infile> | qrLaser.py <outfile>")
+    raise SystemExit()
+
+qr = qrcode.QRCode(
+    version=None,
+    error_correction=qrcode.constants.ERROR_CORRECT_M,
+    box_size=10*SIZE, # unit is 1/10th of a millimeter
+    border=4,
+    stroke_width=Decimal('0.25'),
+)
+
+
+#f = open(argv[1])
+#data = f.read()
+
+data = str(stdin.read())
+
+qr.add_data(data)
+qr.make(fit=True)
+
+img = qr.make_image(fill_color="black", back_color="white", image_factory=qrcode.image.svg.SvgPathImage)
+img.save(argv[1])

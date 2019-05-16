@@ -25,6 +25,9 @@ class SvgFragmentImage(qrcode.image.base.BaseImage):
         # Save the unit size, for example the default box_size of 10 is '1mm'.
         self.unit_size = self.units(self.box_size)
 
+        try: self.strokeWidth = kwargs.pop('strokeWidth')
+        except NameError: pass
+
     def drawrect(self, row, col):
         self._img.append(self._rect(row, col))
 
@@ -96,11 +99,21 @@ class SvgPathImage(SvgImage):
     between individual QR points).
     """
 
-    QR_PATH_STYLE = 'fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none'
+    try:
+        # LASER_PLOTTER
+        # setting a stroke width with SvgPathImage will generate a path that is appropriate for
+        # devices that may not simply fill surfaces (eg: laser/plotter)
+        QR_PATH_STYLE = 'fill:none;stroke-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:'+str(self.strokeWidth)
+    except NameError:
+        # STANDARD_FILL
+        # this is the standard, "legacy" variant.
+        QR_PATH_STYLE = 'fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none'
 
     def __init__(self, *args, **kwargs):
         self._points = set()
         super(SvgPathImage, self).__init__(*args, **kwargs)
+        try: self.stroke_width = kwargs.pop("stroke_width")
+        except KeyError: pass
 
     def _svg(self, viewBox=None, **kwargs):
         if viewBox is None:
@@ -123,12 +136,25 @@ class SvgPathImage(SvgImage):
             y_base = self.units(
                 (point[1]+self.border)*self.box_size, text=False)
 
-            yield (
-                'M %(x0)s %(y0)s L %(x0)s %(y1)s L %(x1)s %(y1)s L %(x1)s '
-                '%(y0)s z' % dict(
-                    x0=x_base, y0=y_base,
-                    x1=x_base+rect_size, y1=y_base+rect_size,
-                ))
+            try:
+                # LASER_PLOTTER
+                for x in range(1,int(rect_size/self.strokewidth/2)+1):
+                    if x%2==1:
+                        offset = x*self.strokewidth
+                        yield (
+                            'M %(x0)s %(y0)s L %(x0)s %(y1)s L %(x1)s %(y1)s L %(x1)s '
+                            '%(y0)s z' % dict(
+                                x0=x_base+offset, y0=y_base+offset,
+                                x1=x_base+rect_size-offset, y1=y_base+rect_size-offset,
+                          ))
+            except AttributeError:
+                # STANDARD_FILL
+                yield (
+                    'M %(x0)s %(y0)s L %(x0)s %(y1)s L %(x1)s %(y1)s L %(x1)s '
+                    '%(y0)s z' % dict(
+                        x0=x_base, y0=y_base,
+                        x1=x_base+rect_size, y1=y_base+rect_size,
+                  ))
 
     def make_path(self):
         subpaths = self._generate_subpaths()

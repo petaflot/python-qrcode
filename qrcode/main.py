@@ -34,7 +34,8 @@ class QRCode(object):
                  error_correction=constants.ERROR_CORRECT_M,
                  box_size=10, border=4,
                  image_factory=None,
-                 mask_pattern=None):
+                 mask_pattern=None,
+                 stroke_width=None):
         _check_box_size(box_size)
         self.version = version and int(version)
         self.error_correction = int(error_correction)
@@ -45,6 +46,7 @@ class QRCode(object):
         _check_mask_pattern(mask_pattern)
         self.mask_pattern = mask_pattern
         self.image_factory = image_factory
+        self.stroke_width = stroke_width
         if image_factory is not None:
             assert issubclass(image_factory, BaseImage)
         self.clear()
